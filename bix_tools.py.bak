@@ -8,15 +8,15 @@ def dct_to_fasta(d, fn):
         traceback.print_tb(tb) # Fixed format
         tb_info = traceback.extract_tb(tb)
         filename, line, func, text = tb_info[-1]
-        print(('An error occurred on line {} in statement {}'.format(line, text)))
+        print('An error occurred on line {} in statement {}'.format(line, text))
         exit(1)
     try:
         with open(fn, "w") as fw:
-            for k, v in list(d.items()):
+            for k, v in d.items():
                 fw.write(">"+k+"\n"+v+"\n")
         return True
     except Exception as e:
-        print(e)
+        print e
         return False
 
 def fasta_to_dct(fn):
@@ -30,7 +30,7 @@ def fasta_to_dct(fn):
         traceback.print_tb(tb) # Fixed format
         tb_info = traceback.extract_tb(tb)
         filename, line, func, text = tb_info[-1]
-        print(('An error occurred on line {} in statement {}'.format(line, text)))
+        print('An error occurred on line {} in statement {}'.format(line, text))
         exit(1)
     dct = {}
     for sequence in SeqIO.parse(open(fn), "fasta"):
@@ -49,8 +49,8 @@ from itertools import groupby
 from operator import itemgetter
 def find_ranges(data):
     ranges = []
-    for k, g in groupby(enumerate(data), lambda i_x:i_x[0]-i_x[1]):
-        ranges.append(list(map(itemgetter(1), g)))
+    for k, g in groupby(enumerate(data), lambda (i,x):i-x):
+        ranges.append(map(itemgetter(1), g))
     for rng in ranges:
         if len(rng) == 1:
             ranges.remove(rng)
@@ -59,7 +59,7 @@ def find_ranges(data):
 def get_regions_from_panel(pnl, regions, wd, outfn):
     p_dct = fasta_to_dct(pnl)
     fw = open(wd + "/"+outfn, "w")
-    for k, v in list(p_dct.items()):
+    for k, v in p_dct.items():
         p_seq = v
         p_joined = ""
         for rgn in regions:
