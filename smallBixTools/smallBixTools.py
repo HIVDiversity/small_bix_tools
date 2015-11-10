@@ -71,3 +71,5 @@ def get_parent(tree, child_clade):
     node_path = tree.get_path(child_clade)
     return node_path[-2]
 
+def main():
+    print("in main of smallBixTools.py")

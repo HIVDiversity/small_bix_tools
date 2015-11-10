@@ -1,0 +1,22 @@
+Metadata-Version: 1.1
+Name: smallBixTools
+Version: 0.0.6
+Summary: A few small methods for bioinformatics
+Home-page: https://bitbucket.org/DavidMatten/small_bix_tools
+Author: David Matten
+Author-email: david.matten@uct.ac.za
+License: Apache
+Description: # smallBixTools
+        a few small functions for bioinformatics
+        
+Keywords: bioinformatics computational biology
+Platform: UNKNOWN
+Classifier: Development Status :: 2 - Pre-Alpha
+Classifier: Intended Audience :: Education
+Classifier: Topic :: Scientific/Engineering :: Information Analysis
+Classifier: License :: OSI Approved :: Apache Software License
+Classifier: Programming Language :: Python :: 2.7
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.2
+Classifier: Programming Language :: Python :: 3.3
+Classifier: Programming Language :: Python :: 3.4

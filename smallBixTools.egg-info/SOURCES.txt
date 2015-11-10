@@ -1,0 +1,11 @@
+MANIFEST.in
+README.rst
+setup.py
+smallBixTools/__init__.py
+smallBixTools/smallBixTools.py
+smallBixTools.egg-info/PKG-INFO
+smallBixTools.egg-info/SOURCES.txt
+smallBixTools.egg-info/dependency_links.txt
+smallBixTools.egg-info/entry_points.txt
+smallBixTools.egg-info/requires.txt
+smallBixTools.egg-info/top_level.txt
