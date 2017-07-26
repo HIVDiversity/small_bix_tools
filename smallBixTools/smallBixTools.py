@@ -5,11 +5,6 @@ from Bio import SeqIO
 import operator
 
 
-def cluster_counter_from_fasta(orig_fasta, cluster_fn):
-    print("The source fasta file which was used for clustering: {}".format(orig_fasta))
-    print("The .uc cluster file produced from software like vsearch: {}".format(cluster_fn))
-
-
 def convert_count_to_frequency_on_fasta(source_fasta_fn, target_fasta_fn):
     """
     when running vsearch as such:
