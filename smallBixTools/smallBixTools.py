@@ -3,6 +3,109 @@ from operator import itemgetter
 import sys, traceback, os
 from Bio import SeqIO
 import operator
+import hashlib
+
+
+def make_hash_of_seqids(src_fn, out_fn):
+    """
+    When calling mafft - sequence ids over 253 in length are truncated. This can result in non-unique ids if the first
+    253 characters of the seqid are the same, with a difference following that.
+    To get around this - we can has the sequence ids, and write a new .fasta file for mafft to work on, then
+    translate the sequence ids back afterwards.
+
+    This function does the hashing and writing to file.
+
+    This is a sibling function to: unmake_hash_of_seqIDS
+
+    Will raise an exception on error
+
+    :param src_fn: the src file to operate on
+    :param out_fn: an output file is produced, with the modified sequence ids.
+    :return: returns a lookup dictionary for finding the new sequence id name. This dictionary can be used with the
+    sibling function: "unmake_hash_of_seqIDS".
+    """
+    try:
+        dct = fasta_to_dct(src_fn)
+        new_dct = {}
+        translation_dct = {}
+        for k, v in dct.items():
+            new_k = hashlib.md5(k.encode()).hexdigest()
+            new_dct[new_k] = v
+            translation_dct[k] = new_k
+        dct_to_fasta(new_dct, out_fn)
+    except Exception as e:
+        print(e)
+        raise
+
+    return translation_dct
+
+
+def unmake_hash_of_seqids(lookup_dict, src_fn, out_fn):
+    """
+    When calling mafft - sequence ids over 253 in length are truncated. This can result in non-unique ids if the first
+    253 characters of the seqid are the same, with a difference following that.
+    To get around this - we can has the sequence ids, and write a new .fasta file for mafft to work on, then
+    translate the sequence ids back afterwards.
+
+    This function does the translation back afterwards.
+
+    This is a sibling function to: make_hash_of_seqIDS.
+
+    Will raise an exception on error
+
+    :param lookup_dict:
+    :param src_fn:
+    :param out_fn:
+    :return: no return value.
+    """
+    try:
+        dct = fasta_to_dct(src_fn) # the dictionary with hashed seqids.
+        back_translated_dct = {} # the 'original' sequence ids are back.
+        for old_k, hash_k in lookup_dict.items():
+            back_translated_dct[old_k] = dct[hash_k]
+        dct_to_fasta(back_translated_dct, out_fn)
+    except Exception as e:
+        print(e)
+        raise
+
+def compare_fasta_files(file1, file2):
+    """
+    Compares two fasta files, to see if they contain the same data. The sequences must be named the same. We check if
+    sequence A from file 1 is the same as sequence A from file 2.
+    The order in the files does not matter.
+    Gaps are considered.
+    :param file1: first fasta file
+    :param file2: second fasta file
+    :return: True if the files contain the same data. False if the files contain different data.
+    """
+    dct1 = fasta_to_dct(file1)
+    dct2 = fasta_to_dct(file2)
+    for seqid, seq1 in dct1.items():
+        if seqid not in dct2.keys():
+            return False
+        seq2 = dct2[seqid]
+        if seq1 != seq2:
+            return False
+    return True
+
+
+def countNinPrimer(primer_seq):
+    """
+    Motifbinner2 requires values to be specified for primer id length and primer length. Its tiresome to have to
+    calculate this for many strings. So, I wrote this to help myself.
+    An example of a primer sequence might be: NNNNNNNAAGGGCCAAAGGAACCCTTTAGAGACTATG
+    And we would like to know how many N's there are, how many other characters there are, and what the combined
+    total lenght is.
+    :param primer_seq: the primer sequence to have calculations performed on.
+    :return: nothing. prints to stdout are done.
+    """
+    n_count = primer_seq.count("N")
+    other_count = primer_seq.count("A") + primer_seq.count("C") + primer_seq.count("G") + primer_seq.count("T")
+    print("N: {}".format(n_count))
+    print("!N: {}".format(other_count))
+    print("total: {}".format(n_count + other_count))
+    min_score = 0.85 * (n_count + other_count)
+    print("suggested min score: {}".format(min_score))
 
 
 def convert_count_to_frequency_on_fasta(source_fasta_fn, target_fasta_fn):
@@ -99,7 +202,7 @@ def split_file_into_timepoints(infile):
 
 def own_cons_maker(infile):
     dct = fasta_to_dct(infile)
-    seqs = [v for k,v in dct.items()]
+    seqs = [v for k, v in dct.items()]
     cons = ""
     for i in range(len(seqs[0])):
         pos = {}
@@ -109,7 +212,10 @@ def own_cons_maker(infile):
                 pos[letter] += 1
             else:
                 pos[letter] = 1
-        cons += max(pos.iteritems(), key=operator.itemgetter(1))[0]
+        if sys.version_info[0] < 3:
+            cons += max(pos.iteritems(), key=operator.itemgetter(1))[0]
+        elif sys.version_info[0] >= 3:
+            cons += max(pos.items(), key=operator.itemgetter(1))[0]
     return cons
 
 
@@ -125,6 +231,18 @@ def build_cons_seq(infile):
 
 
 def auto_duplicate_removal(in_fn, out_fn):
+    """
+    Attempts to automatically remove duplicate sequences from the specifed file. Writes results to output file
+    specified. Uses BioPython SeqIO to parse the in file specified. Replaces spaces in the sequence id with underscores.
+    Itterates over all sequences found - for each one, checking if its key already exists in an accumulating, if it
+    does: check if the sequence which each specifies is the same. If they have the same key, and the same sequence -
+    then keep the second instance encountered. Once the file has been parsed - write to the output file specified all
+     sequences found which
+    Will raise an exception if an error occurs during execution.
+    :param in_fn: The file to check. Full path to file is required.
+    :param out_fn: Output
+    :return: No return value.
+    """
     print("Trying to automatically remove duplicate sequences from the in file: %s" %in_fn)
     try:
         dct = {}
