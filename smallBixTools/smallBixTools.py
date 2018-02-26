@@ -1,9 +1,98 @@
+import subprocess
 from itertools import groupby
 from operator import itemgetter
 import sys, traceback, os
 from Bio import SeqIO
 import operator
 import hashlib
+from Bio import pairwise2
+
+__version__ = "0.0.15"
+
+
+def find_best_global_between_fastas(target_fn, query_fn, csv_out_fn):
+    """
+    For every sequence in the .fasta formatted query_fn, find the best matching sequence from the target_fn based on
+    a global alignment from the BioPython package.
+    :param target_fn: The fasta file to check against. Sequences from the query file will be searched against this file.
+    :param query_fn: The file to check from. Each one of these sequences will have its best match in the target file
+    searched for.
+    :param csv_out_fn: Each sequence from the query file will have a single row in this csv file. Column 1 is the query
+     seqid. Column 2 is the best found target seqid. Column 3 is an identity count.
+    :return: No return. Writes output to csv_out_fn
+    """
+#    seq_align_call = "/home/dave/Software/seq-align/bin/needleman_wunsch"
+    target_dct = fasta_to_dct(target_fn)
+    query_dct = fasta_to_dct(query_fn)
+
+    for query_seqid, query_seq in query_dct.items():
+        for target_seqid, target_seq in target_dct.items():
+            alignments = pairwise2.align.globalxx(query_seq, target_seq)
+            print(len(alignments))
+            print(alignments[0])
+
+    # TODO complete. Writing out to csv.
+
+
+def sanitize_fasta_seqids(infile, outfile, valid_chars):
+    """
+    Read a fasta formatted file. Remove all characters which are not in the valid_chars string.
+    :param infile: input file name to check.
+    :param outfile: output file name to write to.
+    :param valid_chars: string of valid characters.
+                        Typically one might use "{}{}".format(string.ascii_letters, string.digits)
+    :return: No return. Writes to the outfile specified.
+    """
+    dct = fasta_to_dct(infile)
+    new_dct = {}
+    for k, v in dct.items():
+        new_k = ""
+        for char in k:
+            if char in valid_chars:
+                new_k += char
+        if len(new_k) > 0:
+            new_dct[new_k] = v
+        else:
+            print("If we remove all the illegal characters, there is nothing left to use as a sequence id.")
+            raise
+    dct_to_fasta(new_dct, outfile)
+
+
+def compare_seqs_of_fasta_files(fn1, fn2):
+    """
+    Compares the sequences of two fasta files. Does not compare seqids. Prints a list of the seqids for the sequences
+    which are found in one fasta file, but not the other, for both comparison directions. Also returns this a tuple
+    of lists.
+    :param fn1: fasta file 1
+    :param fn2: fasta file 1
+    :return: returns a tuple of lists. ([in fn1 and not in fn2], [in fn2 and not in fn1], [in both])
+    """
+    dct1 = fasta_to_dct(fn1)
+    dct2 = fasta_to_dct(fn2)
+    all_fn1_seqs = list(dct1.values())
+    all_fn2_seqs = list(dct2.values())
+    print(all_fn1_seqs)
+    in1_not_in2 = []
+    in2_not_in1 = []
+    in_both = []
+    for seqid1, seq1 in dct1.items():
+        if seq1 in all_fn2_seqs:
+            in_both.append(seqid1)
+        else:
+            in1_not_in2.append(seqid1)
+    for seqid2, seq2 in dct2.items():
+        if seq2 not in all_fn1_seqs:
+            in2_not_in1.append(seqid2)
+
+    print("All sequences from file 1, which were not found in file 2, their sequence ids are: ")
+    print(in1_not_in2)
+    print("All sequences from file 2, which were not found in file 1, their sequence ids are: ")
+    print(in2_not_in1)
+
+    print("All sequences found in both file 1 and file 2, their sequence ids are: ")
+    print(in_both)
+
+    return in1_not_in2, in2_not_in1, in_both
 
 
 def make_hash_of_seqids(src_fn, out_fn):
@@ -153,21 +242,23 @@ def py3_fasta_iter(fasta_name):
     """
     modified from Brent Pedersen: https://www.biostars.org/p/710/#1412
     given a fasta file. yield tuples of header, sequence
+    :param fasta_name: The fasta formatted file to parse.
     """
-    fh = open(fasta_name)
+    fh = open(str(fasta_name), 'r')
     faiter = (x[1] for x in groupby(fh, lambda line: line[0] == ">"))
     for header in faiter:
         # drop the ">"
-        headerStr = header.__next__()[1:].strip()
+        header_str = header.__next__()[1:].strip()
         # join all sequence lines to one.
         seq = "".join(s.strip() for s in faiter.__next__())
-        yield (headerStr, seq)
+        yield (header_str, seq)
 
 
 def py2_fasta_iter(fasta_name):
     """
     from Brent Pedersen: https://www.biostars.org/p/710/#1412
     given a fasta file. yield tuples of header, sequence
+    :param fasta_name: The fasta formatted file to parse.
     """
     fh = open(fasta_name)
     faiter = (x[1] for x in groupby(fh, lambda line: line[0] == ">"))
@@ -177,6 +268,26 @@ def py2_fasta_iter(fasta_name):
         # join all sequence lines to one.
         seq = "".join(s.strip() for s in faiter.next())
         yield header, seq
+
+
+def try_call(cmd, logging=None):
+    """
+    Try a subprocess call on a string cmd. Raises an error on exceptions. Logging is allowed.
+    :param cmd: The string to try calling.
+    :param logging: Can optionally take a logging arg. This is the default logging for Python.
+    :return: Returns the return code from calling the string command.
+    """
+    rtrn_code = None
+    try:
+        captured_stdout = subprocess.check_output(cmd, shell=True, stderr=subprocess.STDOUT)
+        if logging != None:
+            logging.info(captured_stdout)
+    except Exception as e:
+        if logging != None:
+            logging.warning(e)
+        print(e)
+        raise
+    return rtrn_code
 
 
 def size_selector(in_fn, out_fn, min, max):
@@ -279,6 +390,15 @@ def hyphen_to_underscore_fasta(fn, out_fn):
 
 
 def customdist(s1, s2):
+    """
+    A distance measure between two iterables. Typically meant for DNA sequence strings. eg: ATCG and A-CG would be a
+    distance of 1. ATTCG to A--CG distance 1 also.
+    Gap scores: gap opening: -1. gap extension: penalty of zero. This means any length gap counts the same as a 1 length gap.
+    A second disconnected gap counts as an additional -1.
+    :param s1: first iterable to compare.
+    :param s2: second iterable to compare.
+    :return: returns the distance. int.
+    """
     assert len(s1) == len(s2)
     dist = 0
     for c1, c2 in zip(s1, s2):
@@ -357,27 +477,14 @@ def dct_to_fasta(d, fn):
 
 def fasta_to_dct(fn):
     """
+    Checks which version of Python is being used, calls the appropriate itterator.
+    Spaces in the sequence ids are replaced with underscores.
+    Duplicate sequence ids are not allowed. An error will be raised.
     :param fn: The fasta formatted file to read from.
-    :return: a dictionary of the contents of the file name given. Dictionary in the format:
-             {sequence_id: sequence_string, id_2: sequence_2, etc.}
+    :return: A dictionary of the contents of the fasta file specified. The dictionary in the format:
+             {sequence_id: sequence_string, sequence_id2: sequence_2, etc.}
     """
-    fileName, fileExtension = os.path.splitext(fn)
-#    try:
-#        assert fileExtension.lower() in [".fasta", ".fa", ".fas", ".fna", ".ffn", ".faa", ".frn"]
-#    except AssertionError:
-#        _, _, tb = sys.exc_info()
-#        traceback.print_tb(tb) # Fixed format
-#        tb_info = traceback.extract_tb(tb)
-#        filename, line, func, text = tb_info[-1]
-#        print(('An error occurred on line {} in statement {}'.format(line, text)))
-#        exit(1)
     dct = {}
-    # for sequence in SeqIO.parse(open(fn), "fasta"):
-    #     new_key = sequence.description.replace(" ", "_")
-    #     if new_key in dct.keys():
-    #         print("Duplicate sequence ids found. Exiting")
-    #         raise KeyError("Duplicate sequence ids found")
-    #     dct[new_key] = str(sequence.seq)
     if sys.version_info[0] < 3:
         my_gen = py2_fasta_iter(fn)
     elif sys.version_info[0] >= 3:
@@ -387,7 +494,7 @@ def fasta_to_dct(fn):
         if new_key in dct.keys():
             print("Duplicate sequence ids found. Exiting")
             raise KeyError("Duplicate sequence ids found")
-        dct[new_key] = v
+        dct[new_key] = str(v).replace("~", "_")
     return dct
 
 
@@ -398,13 +505,21 @@ def hamdist(str1, str2):
     The order of the input sequences does not matter.
     :param str1: The first sequence.
     :param str2: The second sequence.
+    :return: Returns an int count of the number of differences between the two input strings, considered per position.
+    """
+    return sum(el1 != el2 for el1, el2 in zip(str1, str2))
+
+
+def normalized_hamdist(str1, str2):
+    """
+    Use this after aligning sequences.
+    This counts the number of differences between equal length str1 and str2
+    The order of the input sequences does not matter.
+    :param str1: The first sequence.
+    :param str2: The second sequence.
     :return: Returns a float value of the number of differences divided by the length of the first input argument.
     """
-    diffs = 0
-    for ch1, ch2 in zip(str1, str2):
-        if ch1 != ch2:
-            diffs +=1
-    return float(diffs)/float(len(str1))
+    return sum(el1 != el2 for el1, el2 in zip(str1, str2))/float(len(str1))
 
 
 def find_ranges(data):
