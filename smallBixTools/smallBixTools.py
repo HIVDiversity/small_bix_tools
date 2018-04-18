@@ -7,7 +7,7 @@ import operator
 import hashlib
 from Bio import pairwise2
 
-__version__ = "0.0.15"
+__version__ = "0.0.17"
 
 
 def find_best_global_between_fastas(target_fn, query_fn, csv_out_fn):
@@ -54,7 +54,7 @@ def sanitize_fasta_seqids(infile, outfile, valid_chars):
             new_dct[new_k] = v
         else:
             print("If we remove all the illegal characters, there is nothing left to use as a sequence id.")
-            raise
+            raise Exception
     dct_to_fasta(new_dct, outfile)
 
 
