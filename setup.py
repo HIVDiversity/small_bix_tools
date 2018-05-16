@@ -14,13 +14,13 @@ with open(path.join(here, 'README.rst'), encoding='utf-8') as f:
 setup(
     name='smallBixTools',
 
-    version='0.0.20',
+    version='0.0.21',
 
     description='A few small methods for bioinformatics',
     long_description=long_description,
 
     # The project's main homepage.
-    url='https://bitbucket.org/DavidMatten/small_bix_tools',
+    url='https://bitbucket.org/hivdiversity/small_bix_tools',
 
     # Author details
     author='David Matten',

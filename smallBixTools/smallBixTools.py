@@ -8,7 +8,7 @@ import hashlib
 from Bio import pairwise2
 
 
-__version__ = "0.0.20"
+__version__ = "0.0.21"
 __author__ = "David Matten"
 __credits__ = ["David Matten", "Colin Anthony", "Carolyn Williamson"]
 __license__ = "GPL"
