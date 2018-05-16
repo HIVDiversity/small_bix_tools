@@ -14,7 +14,7 @@ with open(path.join(here, 'README.rst'), encoding='utf-8') as f:
 setup(
     name='smallBixTools',
 
-    version='0.0.14',
+    version='0.0.20',
 
     description='A few small methods for bioinformatics',
     long_description=long_description,

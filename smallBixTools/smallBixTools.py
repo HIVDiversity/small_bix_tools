@@ -7,7 +7,106 @@ import operator
 import hashlib
 from Bio import pairwise2
 
-__version__ = "0.0.17"
+
+__version__ = "0.0.20"
+__author__ = "David Matten"
+__credits__ = ["David Matten", "Colin Anthony", "Carolyn Williamson"]
+__license__ = "GPL"
+__maintainer__ = "David Matten"
+__email__ = "david.matten@uct.ac.za"
+__status__ = "Development"
+
+
+def test_cmd_present(cmd):
+    '''
+    This tests if cmd is executable. This can be used to check if some
+    software is available at the given path and executable on a machine.
+    For example, if you want to use mafft, and the user says its located at:
+    "/opt/not_really_here/mafft", we an test and return False.
+    :param cmd: the command to test.
+    :return: Bool. True if command is available at path and executable. False if not.
+    '''
+    from shutil import which
+    return which(cmd) is not None
+
+
+def find_start(s):
+    '''
+    Given a string, find the position of the first character which is not a gap "-" hyphen.
+    :param s: String to search for the first non gap character in
+    :return: position of first non-gap character
+    '''
+    import re
+    s = s.upper()
+    start = re.search(r'[^-]', s).start()
+    return start
+
+
+def find_end(s):
+    '''
+    Given a string, s, find the position of the last character which is not a gap "-" hyphen.
+    :param s: String to search for the last non gap character in
+    :return: position of last non-gap character
+    '''
+    import re
+    # reverse the string.
+    s = s[::-1]
+    s = s.upper()
+    # the last character which is not a gap is the first one in the reversed string.
+    # get its position by taking length minus that number.
+    end = len(s) - re.search(r'[^-]', s).start()
+    return end
+
+
+def combine_align_trim(align_to_me, fasta_file_to_be_added, out_file, mafft_call='mafft'):
+    '''
+    This method adds the second argument file (fasta_file_to_be_added) onto the first. It uses mafft add by default
+    to align the second fasta file onto the first.
+    :param align_to_me: This is the first source file to be aligned onto. The file which will be trimmed to. Typically
+    This is a file with shorter reads.
+    :param fasta_file_to_be_added:
+    :param out_file: The path to the fasta file where results should be written. This file will be an aligned combined
+                        version of the two other input source files.
+    :param mafft_call: A non-required argument. How should we call mafft on this machine? Typical mafft installs allow
+    for the default mafft call: "mafft"
+    :return: No return.
+    '''
+    if not test_cmd_present(mafft_call):
+        print("We require mafft to run this method. Please make sure it is installed, or specify how to run it on this"
+              "machine. Get it from: https://mafft.cbrc.jp/alignment/software/")
+    if not os.path.isfile(align_to_me):
+        print("Specified file is not a file.")
+        raise ValueError("Specified file is not a file. {}".format(align_to_me))
+    if not os.path.isfile(fasta_file_to_be_added):
+        print("Specified file is not a file.")
+        raise ValueError("Specified file is not a file. {}".format(fasta_file_to_be_added))
+    if os.path.isfile(out_file):
+        print("The output file will be overwriten: {}".format(out_file))
+
+    cmd = "mafft --thread -1 --add {} {} > {}".format(align_to_me, fasta_file_to_be_added, out_file)
+    try:
+        subprocess.call(cmd, shell=True)
+    except Exception as e:
+        print(e)
+        print("Error trying to call mafft to add the OGV sequences onto the existing NGS alignment., or removing or "
+              "copying files.")
+        raise
+
+    align_to_me_dct = fasta_to_dct(align_to_me)
+
+    starting_positions = [find_start(align_to_me_dct[k]) for k in align_to_me_dct.keys()]
+    start_pos = int(min(starting_positions))
+    ending_positions = [find_end(align_to_me_dct[k]) for k in align_to_me_dct.keys()]
+    end_pos = int(max(ending_positions)) - 1
+    print("The starting position found is: {}".format(start_pos))
+    print("The ending position found is: {}".format(end_pos))
+    print("Trimming to this region.")
+
+    out_dct = fasta_to_dct(out_file)
+    for k in out_dct.keys():
+        out_dct[k] = out_dct[k][start_pos:end_pos]
+
+    dct_to_fasta(out_dct, out_file)
 
 
 def find_best_global_between_fastas(target_fn, query_fn, csv_out_fn):
@@ -156,6 +255,7 @@ def unmake_hash_of_seqids(lookup_dict, src_fn, out_fn):
     except Exception as e:
         print(e)
         raise
+
 
 def compare_fasta_files(file1, file2):
     """
@@ -378,6 +478,7 @@ def auto_duplicate_removal(in_fn, out_fn):
         print("Failed to auto remove duplicates")
         raise
 
+
 def hyphen_to_underscore_fasta(fn, out_fn):
     print("Cleaning a fasta file to have underscores in the sequence names, not hyphens.")
     dct = fasta_to_dct(fn)
@@ -475,9 +576,10 @@ def dct_to_fasta(d, fn):
         print(e)
         return False
 
+
 def fasta_to_dct(fn):
     """
-    Checks which version of Python is being used, calls the appropriate itterator.
+    Checks which version of Python is being used, calls the appropriate iterator.
     Spaces in the sequence ids are replaced with underscores.
     Duplicate sequence ids are not allowed. An error will be raised.
     :param fn: The fasta formatted file to read from.
