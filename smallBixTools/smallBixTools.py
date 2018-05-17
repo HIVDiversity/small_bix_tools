@@ -1,7 +1,8 @@
 import subprocess
 from itertools import groupby
 from operator import itemgetter
-import sys, traceback, os
+import sys
+import os
 from Bio import SeqIO
 import operator
 import hashlib
@@ -93,11 +94,13 @@ def combine_align_trim(align_to_me, fasta_file_to_be_added, out_file, mafft_call
         raise
 
     align_to_me_dct = fasta_to_dct(align_to_me)
+    aligned_dct = fasta_to_dct(out_file)
 
-    starting_positions = [find_start(align_to_me_dct[k]) for k in align_to_me_dct.keys()]
+    starting_positions = [find_start(aligned_dct[k]) for k in align_to_me_dct.keys()]  # use the keys from the orig.
+    # input, and the sequences from the aligned version - as they are the ones with the gaps we want to find.
     start_pos = int(min(starting_positions))
-    ending_positions = [find_end(align_to_me_dct[k]) for k in align_to_me_dct.keys()]
-    end_pos = int(max(ending_positions)) - 1
+    ending_positions = [find_end(aligned_dct[k]) for k in align_to_me_dct.keys()]
+    end_pos = int(max(ending_positions))
     print("The starting position found is: {}".format(start_pos))
     print("The ending position found is: {}".format(end_pos))
     print("Trimming to this region.")
