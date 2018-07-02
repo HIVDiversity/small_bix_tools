@@ -8,8 +8,6 @@ import operator
 import hashlib
 from Bio import pairwise2
 
-
-__version__ = "0.0.21"
 __author__ = "David Matten"
 __credits__ = ["David Matten", "Colin Anthony", "Carolyn Williamson"]
 __license__ = "GPL"
@@ -260,7 +258,7 @@ def unmake_hash_of_seqids(lookup_dict, src_fn, out_fn):
         raise
 
 
-def compare_fasta_files(file1, file2):
+def compare_fasta_files(file1, file2, consider_gaps):
     """
     Compares two fasta files, to see if they contain the same data. The sequences must be named the same. We check if
     sequence A from file 1 is the same as sequence A from file 2.
@@ -268,10 +266,19 @@ def compare_fasta_files(file1, file2):
     Gaps are considered.
     :param file1: first fasta file
     :param file2: second fasta file
+    :param consider_gaps: bool value indicating if gaps should be considered or not. True means consider gaps. False
+    means don't consider gaps. True: ATC-G  is not equal to ATCG.
     :return: True if the files contain the same data. False if the files contain different data.
     """
     dct1 = fasta_to_dct(file1)
     dct2 = fasta_to_dct(file2)
+
+    if consider_gaps:
+        for k in dct1.keys():
+            dct1[k] = dct1[k].replace("-", "")
+        for k in dct2.keys():
+            dct2[k] = dct2[k].replace("-", "")
+
     for seqid, seq1 in dct1.items():
         if seqid not in dct2.keys():
             return False
@@ -399,7 +406,7 @@ def size_selector(in_fn, out_fn, min, max):
     for k, v in dct.items():
         if len(v) < min:
             continue
-        if len(v)>max:
+        if len(v) > max:
             dct2[k] = v[:max]
         else:
             dct2[k] = v
@@ -552,6 +559,21 @@ def find_duplicate_ids(fn):
 #        else:
 #            final_dct[seq_id] = str(seq.seq)
 #    return final_dct
+
+
+def reverse_dictionary(d):
+    '''
+    A simple function to reverse dictionaries. Keys become values, and values become keys.
+    eg: d = {"A": 'a', "B": 'b'}
+    becomes:
+    {"a": 'A', "b": 'B'}
+    :param d: The dictionary to be reversed.
+    :return: A reversed dictionary.
+    '''
+    d2 = {}
+    for k, v in d.items():
+        d2[v] = k
+    return d2
 
 
 def dct_to_fasta(d, fn):
