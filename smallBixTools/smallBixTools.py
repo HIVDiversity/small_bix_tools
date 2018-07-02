@@ -7,6 +7,7 @@ from Bio import SeqIO
 import operator
 import hashlib
 from Bio import pairwise2
+from collections import defaultdict
 
 __author__ = "David Matten"
 __credits__ = ["David Matten", "Colin Anthony", "Carolyn Williamson"]
@@ -17,42 +18,72 @@ __status__ = "Development"
 
 
 def cluster_by_pattern(fasta_filename):
+
+    def get_freqs(s):
+        total_chars = len(s)
+        freq_dct = defaultdict(int)
+        for char in s:
+            freq_dct[char] += 1
+        for k in freq_dct.keys():
+            freq_dct[k] = freq_dct[k] / total_chars
+        return freq_dct
+
     print("clusters by patterns found in the fasta file.")
     dct = fasta_to_dct(fasta_filename)
     seqs = list(dct.values())
     print(seqs)
 
-    sequencing_platforms_lookups = {"PID_illumina": {"seq_error_rate": 0.001, },
+    sequencing_platforms_lookups = {"PID_illumina_miseq": {"seq_error_rate": 0.001, },
                                     "PID_pacbio": {},
                                     "pacbio": {},
                                     }
+
+    threshold = 0.1
+
+    # decide which sites are informative here - based on if any character crosses a frequency threshold.
+    informative_sites = []
     for i in range(len(seqs[0])):
         pos_chars = [s[i] for s in seqs]
+        this_is_an_informative_site = False
         if len(set(pos_chars)) > 1:
             print(pos_chars)
             print(i)
-    # decide which sites are informative here - based on if any character crosses a frequency threshold.
+            pos_freqs = get_freqs(pos_chars)
+            freqs = list(pos_freqs.values())
+            for freq in freqs:
+                if freq > threshold:
+                    this_is_an_informative_site = True
+        if this_is_an_informative_site:
+            informative_sites.append(i)
 
-    informative_sites = [0, 1]
+    print("We found the following informative sites: ")
+    print(informative_sites)
 
+
+    # for these informative sites, we want to find the patterns across the sequencs.
     all_patterns = []
     for seq in seqs:
         pattern = ""
         for inf_site in informative_sites:
             pattern += seq[inf_site]
         all_patterns.append(pattern)
-
     print(all_patterns)
+    all_patterns = list(set(all_patterns))
+    print("The patterns found are: {}".format(all_patterns))
+
+    # establish cluster numbers for these patterns. "AT" is cluster 1. "TA" is cluster 2. etc.
     ptrn_dct = {}
     for i, ptrn in enumerate(list(set(all_patterns))):
         ptrn_dct[ptrn] = i
 
+    # for each sequence, decide which cluster it belongs to.
     for seq in seqs:
         print("Seq: {}".format(seq))
         this_seq_pattern = ""
         for inf_site in informative_sites:
             this_seq_pattern += seq[inf_site]
-        print("assigned to cluster: {}".format(ptrn_dct[this_seq_pattern]))
+        this_cluster = ptrn_dct[this_seq_pattern]
+        print("assigned to cluster: {}".format(this_cluster))
 
 
 def test_cmd_present(cmd):
