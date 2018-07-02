@@ -16,6 +16,45 @@ __email__ = "david.matten@uct.ac.za"
 __status__ = "Development"
 
 
+def cluster_by_pattern(fasta_filename):
+    print("clusters by patterns found in the fasta file.")
+    dct = fasta_to_dct(fasta_filename)
+    seqs = list(dct.values())
+    print(seqs)
+
+    sequencing_platforms_lookups = {"PID_illumina": {"seq_error_rate": 0.001, },
+                                    "PID_pacbio": {},
+                                    "pacbio": {},
+                                    }
+    for i in range(len(seqs[0])):
+        pos_chars = [s[i] for s in seqs]
+        if len(set(pos_chars)) > 1:
+            print(pos_chars)
+            print(i)
+    # decide which sites are informative here - based on if any character crosses a frequency threshold.
+
+    informative_sites = [0, 1]
+
+    all_patterns = []
+    for seq in seqs:
+        pattern = ""
+        for inf_site in informative_sites:
+            pattern += seq[inf_site]
+        all_patterns.append(pattern)
+
+    print(all_patterns)
+    ptrn_dct = {}
+    for i, ptrn in enumerate(list(set(all_patterns))):
+        ptrn_dct[ptrn] = i
+
+    for seq in seqs:
+        print("Seq: {}".format(seq))
+        this_seq_pattern = ""
+        for inf_site in informative_sites:
+            this_seq_pattern += seq[inf_site]
+        print("assigned to cluster: {}".format(ptrn_dct[this_seq_pattern]))
+
+
 def test_cmd_present(cmd):
     '''
     This tests if cmd is executable. This can be used to check if some
