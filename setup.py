@@ -11,10 +11,11 @@ here = path.abspath(path.dirname(__file__))
 with open(path.join(here, 'README.rst'), encoding='utf-8') as f:
     long_description = f.read()
 
+
 setup(
     name='smallBixTools',
 
-    version='0.0.21',
+    version='0.0.25',
 
     description='A few small methods for bioinformatics',
     long_description=long_description,

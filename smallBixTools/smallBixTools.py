@@ -132,6 +132,12 @@ def combine_align_trim(align_to_me, fasta_file_to_be_added, out_file, mafft_call
 
     align_to_me_dct = fasta_to_dct(align_to_me)
     aligned_dct = fasta_to_dct(out_file)
+    if len(align_to_me_dct) == 0:
+        print("Something went wrong. The file {} became empty.".format(align_to_me))
+        raise ValueError("Something went wrong. The file {} became empty.".format(align_to_me))
+    if len(aligned_dct) == 0:
+        print("Something went wrong. The file {} became empty.".format(out_file))
+        raise ValueError("Something went wrong. The file {} became empty.".format(out_file))
 
     starting_positions = [find_start(aligned_dct[k]) for k in align_to_me_dct.keys()]  # use the keys from the orig.
     # input, and the sequences from the aligned version - as they are the ones with the gaps we want to find.
