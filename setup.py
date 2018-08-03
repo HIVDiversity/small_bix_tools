@@ -28,7 +28,7 @@ setup(
     author_email='david.matten@uct.ac.za',
 
     # Choose your license
-    license='Apache',
+    license='GNU GENERAL PUBLIC LICENSE',
 
     # See https://pypi.python.org/pypi?%3Aaction=list_classifiers
     classifiers=[
@@ -55,11 +55,11 @@ setup(
     ],
 
     # What does your project relate to?
-    keywords='bioinformatics computational biology',
+    keywords='bioinformatics computational-biology',
 
     # You can just specify the packages manually here if your project is
     # simple. Or you can use find_packages().
-    packages= ['smallBixTools'] + find_packages(),
+    packages=['smallBixTools'] + find_packages(),
 
     # Alternatively, if you want to distribute just a my_module.py, uncomment
     # this:
@@ -69,11 +69,8 @@ setup(
     # your project is installed. For an analysis of "install_requires" vs pip's
     # requirements files see:
     # https://packaging.python.org/en/latest/requirements.html
-    install_requires=[ 'NumPy',
-                       'biopython', 
-
-                        
-		    ],
+    install_requires=['NumPy',
+                      'biopython'],
 
     # List additional groups of dependencies here (e.g. development
     # dependencies). You can install these using the following syntax,

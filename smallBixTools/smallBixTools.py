@@ -394,7 +394,7 @@ def convert_count_to_frequency_on_fasta(source_fasta_fn, target_fasta_fn):
     This method converts those count values into frequencies.
     Notes: The delimiter between sections in the sequence id must be ";".
     There must be a section in the sequence id which has exactly: "size=x" where x is an integer.
-    This must be surrounded by ";"'s
+    This must be surrounded by ;
     :param source_fasta_fn: the input fasta file. Full path required.
     :param target_fasta_fn: the output fasta file. Full path required. If this is the same as the input, the input will
                             be over-written.
