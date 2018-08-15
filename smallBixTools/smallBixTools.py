@@ -529,9 +529,10 @@ def build_cons_seq(infile):
 
 def auto_duplicate_removal(in_fn, out_fn):
     """
+    FOCUS ON THE SEQIDS LINKED TO THE SEQUENCES.
     Attempts to automatically remove duplicate sequences from the specifed file. Writes results to output file
     specified. Uses BioPython SeqIO to parse the in file specified. Replaces spaces in the sequence id with underscores.
-    Itterates over all sequences found - for each one, checking if its key already exists in an accumulating, if it
+    Itterates over all sequences found - for each one, checking if its key already exists in an accumulating list, if it
     does: check if the sequence which each specifies is the same. If they have the same key, and the same sequence -
     then keep the second instance encountered. Once the file has been parsed - write to the output file specified all
      sequences found which
@@ -563,6 +564,58 @@ def auto_duplicate_removal(in_fn, out_fn):
         print(e)
         print("Failed to auto remove duplicates")
         raise
+
+
+def duplicate_sequence_removal(in_fn, out_fn):
+    '''
+    FOCUS ON THE SEQUENCES ONLY. We don't consider links to the seqids in this method.
+    Attempts to automatically remove duplicate sequences from the specifed file. Writes results to specified output
+    file. Replaces spaces in the sequence id with underscores.
+    Itterates over all sequences found - for each one, checking if it already exists in an accumulating dictionary.
+    If it does: Update the key to the new key.
+    Once the file has been parsed - write to the output file specified all sequences found.
+    Will raise an exception if an error occurs during execution.
+    :param in_fn: The file to check. Full path to file is required.
+    :param out_fn: Output file path. Full path is required.
+    :return: No return value.
+    :param in_fn:
+    :param out_fn:
+    :return: No return
+    '''
+    dct = fasta_to_dct(in_fn)
+    reversed_dct = {}
+    squashed_dct = {}
+    if duplicate_sequence_in_fn(in_fn):
+        # True means: "Yes - we found duplicates"... Lets squash them down. effectively haplotype them.
+        reversed_dct = reverse_dictionary(dct)
+        squashed_dct = reverse_dictionary(reversed_dct)
+        dct_to_fasta(squashed_dct, out_fn)
+    else:
+        # otherwise, just write out the infile to the outfile path.
+        dct_to_fasta(dct, out_fn)
+
+
+def duplicate_sequence_in_fn(in_fn):
+    '''
+    Takes a fasta formatted filename, reads it in, checks if there are duplicate sequences found in the file.
+    Will raise errors.
+    Checks if the length of the set of the sequences is equal to the length of a list of all the sequence values.
+    If they are different lengths, then there are duplicates, and True is returned.- "True, there are duplicates"
+    If they are not different lengths, then there are NO duplicates, and False is returned.: "False, there are NO duplicates"
+    :param in_fn: The filename of the fasta file to check
+    :return: True if duplicate sequences are found. False if no duplicate sequences are found.
+    '''
+    try:
+        dct = fasta_to_dct(in_fn)
+    except Exception as e:
+        print(e)
+        raise e
+    if len(set(dct.values())) != len(dct.values()):
+        return True
+    else:
+        return False
+
+
 
 
 def hyphen_to_underscore_fasta(fn, out_fn):

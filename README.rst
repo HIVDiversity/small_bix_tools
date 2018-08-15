@@ -9,11 +9,13 @@ See readme for full details.
 
 Repo location:
 
-https://bitbucket.org/DavidMatten/small_bix_tools
+https://bitbucket.org/hivdiversity/small_bix_tools
 
-available on VM.
+Docs:
+https://small-bix-tools.readthedocs.io/en/latest/
 
 List of functions:
+(INCOMPLETE)
 
 get_regions_from_panel:
 
